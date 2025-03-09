@@ -9,6 +9,10 @@ import "dotenv/config";
 // each users list of documents available for their database collection
 import { filePathsPerUserCollectionName } from "./filePathsPerUserCollectionName";
 
+interface EmbeddingApiResponse {
+  embedding: number[]; // or whatever type the embedding data is
+}
+
 type SimilarityMetric = "dot_product" | "cosine" | "euclidean";
 
 const { ASTRA_DB_NAMESPACE, ASTRA_DB_API_ENDPOINT, ASTRA_DB_APPLICATION_TOKEN } = process.env;
@@ -126,8 +130,31 @@ const loadSampleData = async () => {
 
         // // get vector and insert the embedding (numerical representation) and text representation into the databsase collection
         // const vector = embedding.data[0].embedding;
-        async function getEmbedding(text: string) {
-          // send chunk to Ollama's nomic-embed-text model
+        // async function getEmbedding(text: string) {
+        //   // send chunk to Ollama's nomic-embed-text model
+        //   const response = await fetch("http://localhost:11434/api/embeddings", {
+        //     method: "POST",
+        //     headers: { "Content-Type": "application/json" },
+        //     body: JSON.stringify({
+        //       model: "nomic-embed-text",
+        //       prompt: text,
+        //     }),
+        //   });
+        
+        //   // const data = await response.json();
+        //   // const data: EmbeddingApiResponse = await response.json();
+        //   const data = await response.json() as EmbeddingApiResponse; // Use 'as' to assert the type
+
+        //   console.log("📌 Embedding API Response:", data); // 🛠 Debugging
+        //   if (!data || !data.embedding) {
+        //     console.error("❌ ERROR: Embedding API did not return valid data");
+        //     return null; // Ensure we don't try to access `length` on `undefined`
+        //   }
+
+        //   return data.embedding;  
+        // }
+
+        async function getEmbedding(text: string): Promise<number[] | null> {
           const response = await fetch("http://localhost:11434/api/embeddings", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -137,19 +164,27 @@ const loadSampleData = async () => {
             }),
           });
         
-          const data = await response.json();
+          const data = await response.json() as EmbeddingApiResponse; // Assert the response type
           console.log("📌 Embedding API Response:", data); // 🛠 Debugging
+        
           if (!data || !data.embedding) {
             console.error("❌ ERROR: Embedding API did not return valid data");
-            return null; // Ensure we don't try to access `length` on `undefined`
+            return null; // Ensure we don't try to access `embedding` on undefined or null
           }
-
+        
           return data.embedding;  
         }
         
+        // // Get embedding for the chunk
+        // const vector = await getEmbedding(chunk);
+        // console.log("📌 Storing embedding vector:", vector.length, vector.slice(0, 5)); // DEBUG: Log first 5 elements
         // Get embedding for the chunk
         const vector = await getEmbedding(chunk);
-        console.log("📌 Storing embedding vector:", vector.length, vector.slice(0, 5)); // DEBUG: Log first 5 elements
+        if (vector) {
+          console.log("📌 Storing embedding vector:", vector.length, vector.slice(0, 5)); // DEBUG: Log first 5 elements
+        } else {
+          console.error("❌ ERROR: Embedding vector is null or undefined");
+        }
 
         // insert embedding and text into the collection
         // if you don't insert the text you will not have english to send to ai model
