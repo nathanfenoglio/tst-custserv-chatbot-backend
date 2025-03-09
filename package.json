@@ -1,6 +1,7 @@
 {
   "scripts": {
-    "download": "node scripts/download.js"
+    "download": "node scripts/download.js",
+    "seed": "ts-node ./scripts/loadDb.ts"
   },
   "dependencies": {
     "@datastax/astra-db-ts": "^1.5.0",
