@@ -40,8 +40,8 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# ignore downloads folder of account documents to be downloaded locally
-/downloads/*
+# ignore documents folder of account documents to be downloaded locally
+/documents/*
 
 # ignore email to db collection map and user specific file names
 /scripts/userEmailsCollections.ts

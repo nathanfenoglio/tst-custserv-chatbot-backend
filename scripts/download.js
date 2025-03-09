@@ -67,7 +67,8 @@ async function downloadFile(auth, fileId, fileName, mimeType) {
 
   const res = await requestOptions;
 
-  const dest = fs.createWriteStream(`./downloads/${fileName}`);
+  // const dest = fs.createWriteStream(`./downloads/${fileName}`);
+  const dest = fs.createWriteStream(`./documents/${fileName}`);
   res.data.pipe(dest);
 
   return new Promise((resolve, reject) => {
