@@ -8,6 +8,8 @@ import fs from "fs"; // for text
 import "dotenv/config";
 // each users list of documents available for their database collection
 import { filePathsPerUserCollectionName } from "./filePathsPerUserCollectionName";
+import path from "path";
+
 
 interface EmbeddingApiResponse {
   embedding: number[]; // or whatever type the embedding data is
@@ -95,13 +97,33 @@ const recreateCollection = async (similarityMetric: SimilarityMetric = "cosine")
   }
 };
 
+// Function to read files from the `./documents` directory
+const getFilesInDirectory = (directory: string): string[] => {
+  try {
+    return fs.readdirSync(directory)
+      .map(file => path.join(directory, file))
+      .filter(filePath => filePath.endsWith(".pdf") || filePath.endsWith(".docx") || filePath.endsWith(".txt"));
+  } catch (error) {
+    console.error(`Error reading directory ${directory}:`, error);
+    return [];
+  }
+};
+
 const loadSampleData = async () => {
   // get reference to the collection you just created
   // const collection = await db.collection(ASTRA_DB_COLLECTION!);
   const collection = await db.collection(collectionName!);
 
+  const files = getFilesInDirectory("./documents");
+
+  if (files.length === 0) {
+    console.warn("No valid files found in ./documents.");
+    return;
+  }
+
   // get content for each file specified in file paths for collection name passed in as command line arg
-  for (const filePath of filePathsPerUserCollectionName[collectionName!]) {
+  // for (const filePath of filePathsPerUserCollectionName[collectionName!]) {
+  for (const filePath of files) {  
     try {
       let content: string;
 
@@ -128,34 +150,9 @@ const loadSampleData = async () => {
         //   encoding_format: "float",
         // });
 
-        // // get vector and insert the embedding (numerical representation) and text representation into the databsase collection
-        // const vector = embedding.data[0].embedding;
-        // async function getEmbedding(text: string) {
-        //   // send chunk to Ollama's nomic-embed-text model
-        //   const response = await fetch("http://localhost:11434/api/embeddings", {
-        //     method: "POST",
-        //     headers: { "Content-Type": "application/json" },
-        //     body: JSON.stringify({
-        //       model: "nomic-embed-text",
-        //       prompt: text,
-        //     }),
-        //   });
-        
-        //   // const data = await response.json();
-        //   // const data: EmbeddingApiResponse = await response.json();
-        //   const data = await response.json() as EmbeddingApiResponse; // Use 'as' to assert the type
-
-        //   console.log("📌 Embedding API Response:", data); // 🛠 Debugging
-        //   if (!data || !data.embedding) {
-        //     console.error("❌ ERROR: Embedding API did not return valid data");
-        //     return null; // Ensure we don't try to access `length` on `undefined`
-        //   }
-
-        //   return data.embedding;  
-        // }
-
         async function getEmbedding(text: string): Promise<number[] | null> {
-          const response = await fetch("http://localhost:11434/api/embeddings", {
+          // const response = await fetch("http://localhost:11434/api/embeddings", {
+          const response = await fetch("http://127.0.0.1:11434/api/embeddings", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
