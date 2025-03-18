@@ -42,9 +42,14 @@ next-env.d.ts
 
 # ignore documents folder of account documents to be downloaded locally
 /documents/*
+/documents_2/*
 
 # ignore email to db collection map and user specific file names
 /scripts/userEmailsCollections.ts
 /scripts/filePathsPerUserCollectionName.ts
+/scripts/localFoldersPerUserCollectionName.ts
+folderIdsCollections.js
+driveFolderIdToLocalFolder.js
+
 # ignore google drive api credentials
 client_secret.json

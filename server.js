@@ -1,39 +1,33 @@
-// node server.js
-// const express = require('express');
-// const { exec } = require('child_process');
+import express from "express";
+import { exec } from "child_process";
+import { folderIdsCollections } from "./folderIdsCollections.js";
 
-// const app = express();
-// app.use(express.json());
-
-// app.post("/webhook", (req, res) => {
-//   console.log(req.body);
-//   const command = "npm run download";
-//   exec(command, (error, stdout, stderr) => {
-//     if (error) {
-//       console.error(`exec error: ${error}`);
-//       return;
-//     }
-//     console.log(`stdout: ${stdout}`);
-//     console.log(`stderr: ${stderr}`);
-//     res.sendStatus(200);
-//   })
-// })
-
-// app.listen(3001, () => {
-//   console.log("Listening on port 3001");
-// })
-
-const express = require('express');
-const { exec } = require('child_process');
 
 const app = express();
 app.use(express.json());
 
 app.post("/webhook", (req, res) => {
   console.log(req.body);
+  const folderId = req.body.folderId;
+  if (!folderId) {
+    console.error("❌ Error: Missing folderId in request body.");
+    return res.status(400).send("Missing folderId");
+  }
+  console.log(`📂 Received folderId: ${folderId}`);
+
+  const collectionName = folderIdsCollections.get(folderId);
+
+  if (!collectionName) {
+    console.error(`❌ Error: No collection name mapped for folderId: ${folderId}`);
+    return res.status(400).send("Invalid folderId");
+  }
+
+  console.log(`📂 Mapped Collection Name: ${collectionName}`);
 
   // Step 1: Run `npm run download`
-  exec("npm run download", (error, stdout, stderr) => {
+  // run download.js script to download the files from the user's folderId 
+  // from google drive to their specified local folder
+  exec(`npm run download -- ${folderId}`, (error, stdout, stderr) => {
     if (error) {
       console.error(`Download error: ${error}`);
       res.sendStatus(500); // Send an error response
@@ -42,8 +36,9 @@ app.post("/webhook", (req, res) => {
     console.log(`Download stdout: ${stdout}`);
     console.log(`Download stderr: ${stderr}`);
 
-    // Step 2: Run `npm run seed -- tstcustserv` after `npm run download` finishes
-    exec("npm run seed -- tstcustserv", (seedError, seedStdout, seedStderr) => {
+    // reseed astra db for user's specified collection with user's specified folder files
+    // runs loadDb.ts script
+    exec(`npm run seed -- ${collectionName}`, (seedError, seedStdout, seedStderr) => {
       if (seedError) {
         console.error(`Seed error: ${seedError}`);
         res.sendStatus(500); // Send an error response

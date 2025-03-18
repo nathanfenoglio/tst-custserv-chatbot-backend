@@ -6,8 +6,7 @@ import pdf from "pdf-parse"; // for pdf
 import mammoth from "mammoth"; // for docx
 import fs from "fs"; // for text
 import "dotenv/config";
-// each users list of documents available for their database collection
-import { filePathsPerUserCollectionName } from "./filePathsPerUserCollectionName";
+import { localFoldersPerUserCollectionName } from "./localFoldersPerUserCollectionName";
 import path from "path";
 
 
@@ -21,6 +20,14 @@ const { ASTRA_DB_NAMESPACE, ASTRA_DB_API_ENDPOINT, ASTRA_DB_APPLICATION_TOKEN } 
 
 // get astra db collection name from command line arg instead to differentiate which collection to use
 const collectionName: string = process.argv[2];
+
+// get user local folder name from collection name
+const DOCUMENTS_FOLDER = localFoldersPerUserCollectionName.get(collectionName);
+
+if (!DOCUMENTS_FOLDER) {
+  console.error(`The folder for collection "${collectionName}" is not defined.`);
+  process.exit(1);
+}
 
 if (!collectionName) {
   console.error("Please provide a collection name as an argument.");
@@ -97,7 +104,7 @@ const recreateCollection = async (similarityMetric: SimilarityMetric = "cosine")
   }
 };
 
-// Function to read files from the `./documents` directory
+// Function to read files from the user's specific directory
 const getFilesInDirectory = (directory: string): string[] => {
   try {
     return fs.readdirSync(directory)
@@ -111,17 +118,18 @@ const getFilesInDirectory = (directory: string): string[] => {
 
 const loadSampleData = async () => {
   // get reference to the collection you just created
-  // const collection = await db.collection(ASTRA_DB_COLLECTION!);
   const collection = await db.collection(collectionName!);
 
-  const files = getFilesInDirectory("./documents");
+  // get all files from user's specified directory
+  const files = getFilesInDirectory(DOCUMENTS_FOLDER);
 
   if (files.length === 0) {
-    console.warn("No valid files found in ./documents.");
+    console.warn(`No valid files found in ${DOCUMENTS_FOLDER}`);
     return;
   }
 
   // get content for each file specified in file paths for collection name passed in as command line arg
+  // NOT USING filePathsPerUserCollectionName INSTEAD USING DIRECTORY PER USER GOOGLE DRIVE AND LOCALLY
   // for (const filePath of filePathsPerUserCollectionName[collectionName!]) {
   for (const filePath of files) {  
     try {
@@ -151,6 +159,7 @@ const loadSampleData = async () => {
         // });
 
         async function getEmbedding(text: string): Promise<number[] | null> {
+          // was having trouble until I changed localhost to 127.0.0.1
           // const response = await fetch("http://localhost:11434/api/embeddings", {
           const response = await fetch("http://127.0.0.1:11434/api/embeddings", {
             method: "POST",
@@ -172,9 +181,6 @@ const loadSampleData = async () => {
           return data.embedding;  
         }
         
-        // // Get embedding for the chunk
-        // const vector = await getEmbedding(chunk);
-        // console.log("📌 Storing embedding vector:", vector.length, vector.slice(0, 5)); // DEBUG: Log first 5 elements
         // Get embedding for the chunk
         const vector = await getEmbedding(chunk);
         if (vector) {
