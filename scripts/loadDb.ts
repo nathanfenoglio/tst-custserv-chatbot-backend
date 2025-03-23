@@ -1,7 +1,6 @@
 // npm run seed -- "name of the collection that you want to seed"
 import { DataAPIClient } from "@datastax/astra-db-ts";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
-// import OpenAI from "openai";
 import pdf from "pdf-parse"; // for pdf
 import mammoth from "mammoth"; // for docx
 import fs from "fs"; // for text
@@ -18,7 +17,7 @@ type SimilarityMetric = "dot_product" | "cosine" | "euclidean";
 
 const { ASTRA_DB_NAMESPACE, ASTRA_DB_API_ENDPOINT, ASTRA_DB_APPLICATION_TOKEN } = process.env;
 
-// get astra db collection name from command line arg instead to differentiate which collection to use
+// get astra db collection name from command line arg to differentiate which collection to use
 const collectionName: string = process.argv[2];
 
 // get user local folder name from collection name
@@ -34,14 +33,12 @@ if (!collectionName) {
   process.exit(1);
 }
 
-// Validate environment variables
+// validate environment variables
 const validateEnvVariables = () => {
   const requiredVars = {
     ASTRA_DB_NAMESPACE,
-    // ASTRA_DB_COLLECTION,
     ASTRA_DB_API_ENDPOINT,
     ASTRA_DB_APPLICATION_TOKEN,
-    // OPENAI_API_KEY,
   };
 
   for (const [key, value] of Object.entries(requiredVars)) {
@@ -58,8 +55,6 @@ const validateEnvVariables = () => {
 if (!validateEnvVariables()) {
   process.exit(1);
 }
-
-// const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
 
 const client = new DataAPIClient(ASTRA_DB_APPLICATION_TOKEN);
 
@@ -104,7 +99,7 @@ const recreateCollection = async (similarityMetric: SimilarityMetric = "cosine")
   }
 };
 
-// Function to read files from the user's specific directory
+// get file names from the user's specific directory
 const getFilesInDirectory = (directory: string): string[] => {
   try {
     return fs.readdirSync(directory)
@@ -130,7 +125,6 @@ const loadSampleData = async () => {
 
   // get content for each file specified in file paths for collection name passed in as command line arg
   // NOT USING filePathsPerUserCollectionName INSTEAD USING DIRECTORY PER USER GOOGLE DRIVE AND LOCALLY
-  // for (const filePath of filePathsPerUserCollectionName[collectionName!]) {
   for (const filePath of files) {  
     try {
       let content: string;
@@ -138,11 +132,14 @@ const loadSampleData = async () => {
       // Load content based on file type
       if (filePath.endsWith(".pdf")) {
         content = await loadPDF(filePath);
-      } else if (filePath.endsWith(".docx")) {
+      } 
+      else if (filePath.endsWith(".docx")) {
         content = await loadDocx(filePath);
-      } else if (filePath.endsWith(".txt")) {
+      } 
+      else if (filePath.endsWith(".txt")) {
         content = await loadText(filePath);
-      } else {
+      } 
+      else {
         console.warn(`Unsupported file type: ${filePath}`);
         continue;
       }
@@ -152,15 +149,10 @@ const loadSampleData = async () => {
 
       // create embedding (numerical representation) for each chunk
       for await (const chunk of chunks) {
-        // const embedding = await openai.embeddings.create({
-        //   model: "text-embedding-3-small",
-        //   input: chunk,
-        //   encoding_format: "float",
-        // });
-
         async function getEmbedding(text: string): Promise<number[] | null> {
           // was having trouble until I changed localhost to 127.0.0.1
           // const response = await fetch("http://localhost:11434/api/embeddings", {
+          // send POST request to ollama nomic-embed-text model running locally
           const response = await fetch("http://127.0.0.1:11434/api/embeddings", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -170,26 +162,27 @@ const loadSampleData = async () => {
             }),
           });
         
-          const data = await response.json() as EmbeddingApiResponse; // Assert the response type
-          console.log("📌 Embedding API Response:", data); // 🛠 Debugging
+          const data = await response.json() as EmbeddingApiResponse; 
+          console.log("Embedding API Response:", data); 
         
           if (!data || !data.embedding) {
-            console.error("❌ ERROR: Embedding API did not return valid data");
-            return null; // Ensure we don't try to access `embedding` on undefined or null
+            console.error("ERROR: Embedding API did not return valid data");
+            return null; 
           }
         
           return data.embedding;  
         }
         
-        // Get embedding for the chunk
+        // get embedding for the chunk from ollama nomic-embed-text
         const vector = await getEmbedding(chunk);
         if (vector) {
-          console.log("📌 Storing embedding vector:", vector.length, vector.slice(0, 5)); // DEBUG: Log first 5 elements
-        } else {
-          console.error("❌ ERROR: Embedding vector is null or undefined");
+          console.log("Storing embedding vector:", vector.length, vector.slice(0, 5)); // just printing 1st 5 elements to check
+        } 
+        else {
+          console.error("ERROR: Embedding vector is null or undefined");
         }
 
-        // insert embedding and text into the collection
+        // insert embedding and text into the astradb collection
         // if you don't insert the text you will not have english to send to ai model
         const res = await collection.insertOne({
           $vector: vector,
