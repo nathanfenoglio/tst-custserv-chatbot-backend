@@ -121,7 +121,9 @@ Locally run LLM chatbot for company employees to be able to query their personal
 - copy code from Code.gs and paste into the google apps script that you just created
     - need to get url from backend to insert in the below code block
     - ![alt_image](https://github.com/nathanfenoglio/tst-custserv-chatbot/blob/main/readme_images/1.png)
-    - 
+    - need to get folder ids that you copied from the last part of the google drive folder url and put them in the variables folderIds and folderIdsToLastFileDataNames in Code.gs
+      - add new lastFileData variable in folderIdsToLastFileDataNames dictionary (this will create a persistent script property in google drive to save the last file names of a folder)
+    - ![alt_image](https://github.com/nathanfenoglio/tst-custserv-chatbot/blob/main/readme_images/7.png)
 - schedule google apps script to be run at whatever interval
     - click on triggers
     - add trigger
