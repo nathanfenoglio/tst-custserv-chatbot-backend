@@ -45,6 +45,7 @@ app.post("/webhook", (req, res) => {
     // reseed astra db for user's specified collection with user's specified folder files
     // runs loadDb.ts script
     // passes astradb collection name that will be dropped and reseeded
+    // this exec must wait for 1st exec to complete as it is nested here in the call back of the 1st exec 
     exec(`npm run seed -- ${collectionName}`, (seedError, seedStdout, seedStderr) => {
       if (seedError) {
         console.error(`Seed error: ${seedError}`);

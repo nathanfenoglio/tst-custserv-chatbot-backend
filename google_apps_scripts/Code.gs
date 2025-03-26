@@ -74,7 +74,7 @@ function onFileUpload(e) {
       };
 
       // url where backend is running
-      var webHookUrl = "https://b214-2600-1700-640-4100-34cb-af54-b06-c779.ngrok-free.app/webhook";
+      var webHookUrl = "https:BACKEND URL GENERATED FROM ngrok http 3001";
       var options = {
         method: "post",
         contentType: "application/json",
